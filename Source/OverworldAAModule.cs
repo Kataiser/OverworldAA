@@ -1,4 +1,5 @@
 ﻿using System;
+using Monocle;
 
 namespace Celeste.Mod.OverworldAA;
 
@@ -26,10 +27,23 @@ public class OverworldAAModule : EverestModule {
     }
 
     public override void Load() {
-        // TODO: apply any hooks that should always be active
+        On.Celeste.MountainModel.ResetRenderTargets += modMountainModelResetRenderTargets;
     }
 
     public override void Unload() {
-        // TODO: unapply any hooks applied in Load()
+        On.Celeste.MountainModel.ResetRenderTargets -= modMountainModelResetRenderTargets;
+    }
+
+    // this would be better as an IL hook
+    // I could've also done orig() and then replace the buffer, but that requires creating a reduntant render target (which is fast tbf)
+    private void modMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
+        int width = Math.Min(1920, Engine.ViewWidth);
+        int height = Math.Min(1080, Engine.ViewHeight);
+        if (self.buffer != null && !self.buffer.IsDisposed && (self.buffer.Width == width || self.LockBufferResizing))
+            return;
+        self.DisposeTargets();
+        self.buffer = VirtualContent.CreateRenderTarget("mountain-a", width, height, true, false, 8);
+        self.blurA = VirtualContent.CreateRenderTarget("mountain-blur-a", width / 2, height / 2);
+        self.blurB = VirtualContent.CreateRenderTarget("mountain-blur-b", width / 2, height / 2);
     }
 }
