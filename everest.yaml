@@ -1,0 +1,6 @@
+- Name: OverworldAA
+  Version: 1.0.0
+  DLL: Code/OverworldAA.dll
+  Dependencies:
+    - Name: Everest
+      Version: 1.5326.0

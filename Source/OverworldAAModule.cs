@@ -20,7 +20,7 @@ public class OverworldAAModule : EverestModule {
 #endif
     }
 
-    private static int? _lastAaLevel;
+    private static AALevel? _lastAaLevel;
 
     public override void Load() {
         On.Celeste.MountainModel.ResetRenderTargets += ModMountainModelResetRenderTargets;
@@ -33,17 +33,17 @@ public class OverworldAAModule : EverestModule {
     // this would probably be better as an IL hook
     private static void ModMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
         var AALevelValue = Settings.AntialiasingLevel switch {
-            0 => 0,
-            1 => 2,
-            2 => 4,
-            3 => 8,
+            AALevel.Disabled => 0,
+            AALevel._2x => 2,
+            AALevel._4x => 4,
+            AALevel._8x => 8,
             _ => throw new ArgumentOutOfRangeException()
         };
 
         // orig (mostly)
         var width = Math.Min(1920, Engine.ViewWidth);
         var height = Math.Min(1080, Engine.ViewHeight);
-        if (self.buffer is { IsDisposed: false } && (self.buffer.Width == width || self.LockBufferResizing) && AALevelValue == _lastAaLevel)
+        if (self.buffer is { IsDisposed: false } && (self.buffer.Width == width || self.LockBufferResizing) && Settings.AntialiasingLevel == _lastAaLevel)
             return;
         self.DisposeTargets();
         self.buffer = VirtualContent.CreateRenderTarget("mountain-a", width, height, true, false, AALevelValue);
@@ -52,6 +52,6 @@ public class OverworldAAModule : EverestModule {
         // end orig
 
         Logger.Log(LogLevel.Info, "OverworldAA", $"Set overworld AA level to {AALevelValue}");
-        _lastAaLevel = AALevelValue;
+        _lastAaLevel = Settings.AntialiasingLevel;
     }
 }
