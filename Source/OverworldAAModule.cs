@@ -26,6 +26,8 @@ public class OverworldAAModule : EverestModule {
 #endif
     }
 
+    private static AALevels? lastAALevel = null;
+
     public override void Load() {
         On.Celeste.MountainModel.ResetRenderTargets += modMountainModelResetRenderTargets;
     }
@@ -35,15 +37,29 @@ public class OverworldAAModule : EverestModule {
     }
 
     // this would be better as an IL hook
-    // I could've also done orig() and then replace the buffer, but that requires creating a reduntant render target (which is fast tbf)
-    private void modMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
-        int width = Math.Min(1920, Engine.ViewWidth);
-        int height = Math.Min(1080, Engine.ViewHeight);
-        if (self.buffer != null && !self.buffer.IsDisposed && (self.buffer.Width == width || self.LockBufferResizing))
+    // I could've also done orig() and then replace the buffer, but that requires creating a reduntant render target
+    // (which is fast tbf but does happen every frame)
+    private static void modMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
+        var AALevel = Settings.AntialiasingLevel switch {
+            AALevels.Disabled => 0,
+            AALevels._2x => 2,
+            AALevels._4x => 4,
+            AALevels._8x => 8,
+            _ => throw new ArgumentOutOfRangeException()
+        };
+
+        // orig (mostly)
+        var width = Math.Min(1920, Engine.ViewWidth);
+        var height = Math.Min(1080, Engine.ViewHeight);
+        if (self.buffer is { IsDisposed: false } && (self.buffer.Width == width || self.LockBufferResizing) && Settings.AntialiasingLevel == lastAALevel)
             return;
         self.DisposeTargets();
-        self.buffer = VirtualContent.CreateRenderTarget("mountain-a", width, height, true, false, 8);
+        self.buffer = VirtualContent.CreateRenderTarget("mountain-a", width, height, true, false, AALevel);
         self.blurA = VirtualContent.CreateRenderTarget("mountain-blur-a", width / 2, height / 2);
         self.blurB = VirtualContent.CreateRenderTarget("mountain-blur-b", width / 2, height / 2);
+        // end orig
+
+        Logger.Log(LogLevel.Info, "OverworldAA", $"Set overworld AA level to {AALevel}");
+        lastAALevel = Settings.AntialiasingLevel;
     }
 }
