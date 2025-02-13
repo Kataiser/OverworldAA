@@ -9,12 +9,6 @@ public class OverworldAAModule : EverestModule {
     public override Type SettingsType => typeof(OverworldAAModuleSettings);
     public static OverworldAAModuleSettings Settings => (OverworldAAModuleSettings) Instance._Settings;
 
-    public override Type SessionType => typeof(OverworldAAModuleSession);
-    public static OverworldAAModuleSession Session => (OverworldAAModuleSession) Instance._Session;
-
-    public override Type SaveDataType => typeof(OverworldAAModuleSaveData);
-    public static OverworldAAModuleSaveData SaveData => (OverworldAAModuleSaveData) Instance._SaveData;
-
     public OverworldAAModule() {
         Instance = this;
 #if DEBUG
@@ -26,18 +20,18 @@ public class OverworldAAModule : EverestModule {
 #endif
     }
 
-    private static int? lastAALevel;
+    private static int? _lastAaLevel;
 
     public override void Load() {
-        On.Celeste.MountainModel.ResetRenderTargets += modMountainModelResetRenderTargets;
+        On.Celeste.MountainModel.ResetRenderTargets += ModMountainModelResetRenderTargets;
     }
 
     public override void Unload() {
-        On.Celeste.MountainModel.ResetRenderTargets -= modMountainModelResetRenderTargets;
+        On.Celeste.MountainModel.ResetRenderTargets -= ModMountainModelResetRenderTargets;
     }
 
     // this would probably be better as an IL hook
-    private static void modMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
+    private static void ModMountainModelResetRenderTargets(On.Celeste.MountainModel.orig_ResetRenderTargets orig, MountainModel self) {
         var AALevelValue = Settings.AntialiasingLevel switch {
             0 => 0,
             1 => 2,
@@ -49,7 +43,7 @@ public class OverworldAAModule : EverestModule {
         // orig (mostly)
         var width = Math.Min(1920, Engine.ViewWidth);
         var height = Math.Min(1080, Engine.ViewHeight);
-        if (self.buffer is { IsDisposed: false } && (self.buffer.Width == width || self.LockBufferResizing) && AALevelValue == lastAALevel)
+        if (self.buffer is { IsDisposed: false } && (self.buffer.Width == width || self.LockBufferResizing) && AALevelValue == _lastAaLevel)
             return;
         self.DisposeTargets();
         self.buffer = VirtualContent.CreateRenderTarget("mountain-a", width, height, true, false, AALevelValue);
@@ -58,6 +52,6 @@ public class OverworldAAModule : EverestModule {
         // end orig
 
         Logger.Log(LogLevel.Info, "OverworldAA", $"Set overworld AA level to {AALevelValue}");
-        lastAALevel = AALevelValue;
+        _lastAaLevel = AALevelValue;
     }
 }
