@@ -5,7 +5,7 @@ namespace Celeste.Mod.OverworldAA;
 public class OverworldAAModuleSettings : EverestModuleSettings {
     [SettingInGame(false)]
     [DefaultValue(AALevel._8x)]
-    public AALevel AntialiasingLevel { get; set; }
+    public AALevel AntialiasingLevel { get; set; } = AALevel._8x;
 }
 
 public enum AALevel {
